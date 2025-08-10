@@ -2,7 +2,7 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 1.0.0
+ * @version 1.13
  */
 
 module.exports = class WordleBlocker {
