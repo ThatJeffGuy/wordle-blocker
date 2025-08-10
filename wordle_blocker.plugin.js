@@ -2,16 +2,15 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 4.0.0
+ * @version 1.0.0
  */
 
 module.exports = class WordleBlocker {
     constructor() {
         this.observer = null;
         this.blockedPatterns = [
-            /[🟩🟨⬜⬛🟦]{2,}/g,
-            /[🟩🟨⬜⬛🟦]/g,
-            /:green_square:|:yellow_square:|:white_square:|:black_square:|:blue_square:/gi,
+            /[🟩🟨⬜⬛🟦⬛️⬜️🟩️🟨️🟦️⬆️⬇️⬅️➡️◼️◻️▫️▪️]/g,
+            /:green_square:|:yellow_square:|:white_square:|:black_square:|:blue_square:|:black_large_square:|:white_large_square:/gi,
             /wordle\s*\d+/gi,
             /connections\s*(puzzle\s*)?\#?\d+/gi,
             /spelling\s*bee/gi,
@@ -22,7 +21,7 @@ module.exports = class WordleBlocker {
             /absurdle/gi,
             /framed/gi,
             /nytimes\.com\/games/gi,
-            /\d+\/\d+\s*[🟩🟨⬜⬛🟦]/gi
+            /\d+\/\d+\s*[🟩🟨⬜⬛🟦⬛️⬜️🟩️🟨️🟦️◼️◻️]/gi
         ];
     }
 
@@ -107,13 +106,20 @@ module.exports = class WordleBlocker {
         });
 
         if (shouldBlock) {
-            this.hideMessage(messageElement);
+            const mainMessage = messageElement.closest('[class*="message"][id]') || messageElement;
+            this.hideMessage(mainMessage);
         }
     }
 
     hideMessage(messageElement) {
-        messageElement.setAttribute('data-wordle-blocked', 'true');
-        messageElement.style.display = 'none';
+        const mainMessage = messageElement.closest('[class*="message"][id]') || messageElement;
+        
+        if (mainMessage.getAttribute('data-wordle-blocked')) {
+            return;
+        }
+        
+        mainMessage.setAttribute('data-wordle-blocked', 'true');
+        mainMessage.style.display = 'none';
         console.log('WordleBlocker: Blocked message');
     }
 };
