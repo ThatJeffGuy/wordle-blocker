@@ -2,7 +2,7 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 1.14
+ * @version 1.15
  */
 
 module.exports = class WordleBlocker {
@@ -36,59 +36,36 @@ module.exports = class WordleBlocker {
             });
         });
 
-        this.messageObserver = new MutationObserver(() => {
-            setTimeout(() => {
-                this.checkAllMessages();
-            }, 50);
-        });
-
-        const chatContainer = document.querySelector('[data-list-id="chat-messages"]') || 
-                            document.querySelector('[class*="messagesWrapper"]') ||
-                            document.querySelector('[class*="chatContent"]');
+        const chatContainer = document.querySelector('[data-list-id="chat-messages"]');
         
         if (chatContainer) {
             this.observer.observe(chatContainer, {
                 childList: true,
-                subtree: true
-            });
-            
-            this.messageObserver.observe(chatContainer, {
-                childList: true,
-                subtree: true,
-                characterData: true,
-                attributes: true
+                subtree: false
             });
         }
 
         this.checkAllMessages();
-        this.startPeriodicCheck();
         console.log('WordleBlocker: Active');
     }
 
-    startPeriodicCheck() {
-        this.periodicInterval = setInterval(() => {
-            this.checkAllMessages();
-        }, 5000);
-    }
-
     processElement(element) {
-        this.checkAndHideMessage(element);
-        const messages = element.querySelectorAll('[class*="message"], [id*="message"], [class*="cozy"], [class*="compact"]');
-        messages.forEach(msg => this.checkAndHideMessage(msg));
+        if (element.classList && element.classList.toString().includes('message')) {
+            this.checkAndHideMessage(element);
+        }
+        
+        const messages = element.querySelectorAll('[class*="messageListItem"], [class*="message-"]');
+        messages.forEach(msg => {
+            if (msg.querySelector) {
+                this.checkAndHideMessage(msg);
+            }
+        });
     }
 
     stop() {
         if (this.observer) {
             this.observer.disconnect();
             this.observer = null;
-        }
-        if (this.messageObserver) {
-            this.messageObserver.disconnect();
-            this.messageObserver = null;
-        }
-        if (this.periodicInterval) {
-            clearInterval(this.periodicInterval);
-            this.periodicInterval = null;
         }
         
         const hiddenMessages = document.querySelectorAll('[data-wordle-blocked="true"]');
@@ -99,8 +76,13 @@ module.exports = class WordleBlocker {
     }
 
     checkAllMessages() {
-        const messages = document.querySelectorAll('[class*="message"], [id*="message"], [class*="cozy"], [class*="compact"]');
-        messages.forEach(msg => this.checkAndHideMessage(msg));
+        const messages = document.querySelectorAll('[data-list-id="chat-messages"] [class*="messageListItem"]');
+        messages.forEach(msg => {
+            if (msg.querySelector && !msg.getAttribute('data-wordle-checked')) {
+                this.checkAndHideMessage(msg);
+                msg.setAttribute('data-wordle-checked', 'true');
+            }
+        });
     }
 
     checkAndHideMessage(messageElement) {
@@ -108,34 +90,38 @@ module.exports = class WordleBlocker {
             return;
         }
 
-        const contentElement = messageElement.querySelector('[class*="messageContent"]') ||
-                              messageElement.querySelector('[class*="markup"]') ||
-                              messageElement;
-        
-        if (!contentElement) return;
+        try {
+            const contentElement = messageElement.querySelector('[class*="messageContent"]') ||
+                                  messageElement.querySelector('[class*="markup"]');
+            
+            if (!contentElement) return;
 
-        const messageText = contentElement.textContent || contentElement.innerText || '';
-        const messageHTML = contentElement.innerHTML || '';
+            const messageText = contentElement.textContent || '';
+            const messageHTML = contentElement.innerHTML || '';
 
-        const shouldBlock = this.blockedPatterns.some(pattern => {
-            return pattern.test(messageText) || pattern.test(messageHTML);
-        });
+            const shouldBlock = this.blockedPatterns.some(pattern => {
+                return pattern.test(messageText) || pattern.test(messageHTML);
+            });
 
-        if (shouldBlock) {
-            const mainMessage = messageElement.closest('[class*="message"][id]') || messageElement;
-            this.hideMessage(mainMessage);
+            if (shouldBlock) {
+                this.hideMessage(messageElement);
+            }
+        } catch (e) {
+            console.log('WordleBlocker: Error processing message', e);
         }
     }
 
     hideMessage(messageElement) {
-        const mainMessage = messageElement.closest('[class*="message"][id]') || messageElement;
-        
-        if (mainMessage.getAttribute('data-wordle-blocked')) {
+        if (messageElement.getAttribute('data-wordle-blocked')) {
             return;
         }
         
-        mainMessage.setAttribute('data-wordle-blocked', 'true');
-        mainMessage.style.display = 'none';
-        console.log('WordleBlocker: Blocked message');
+        try {
+            messageElement.setAttribute('data-wordle-blocked', 'true');
+            messageElement.style.display = 'none';
+            console.log('WordleBlocker: Blocked message');
+        } catch (e) {
+            console.log('WordleBlocker: Error hiding message', e);
+        }
     }
 };
