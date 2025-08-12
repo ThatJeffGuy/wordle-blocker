@@ -2,7 +2,7 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 1.13
+ * @version 1.14
  */
 
 module.exports = class WordleBlocker {
@@ -30,9 +30,7 @@ module.exports = class WordleBlocker {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        this.checkAndHideMessage(node);
-                        const messages = node.querySelectorAll('[class*="message"]');
-                        messages.forEach(msg => this.checkAndHideMessage(msg));
+                        this.processElement(node);
                     }
                 });
             });
@@ -40,8 +38,8 @@ module.exports = class WordleBlocker {
 
         this.messageObserver = new MutationObserver(() => {
             setTimeout(() => {
-                this.checkExistingMessages();
-            }, 100);
+                this.checkAllMessages();
+            }, 50);
         });
 
         const chatContainer = document.querySelector('[data-list-id="chat-messages"]') || 
@@ -57,12 +55,26 @@ module.exports = class WordleBlocker {
             this.messageObserver.observe(chatContainer, {
                 childList: true,
                 subtree: true,
-                characterData: true
+                characterData: true,
+                attributes: true
             });
         }
 
-        this.checkExistingMessages();
+        this.checkAllMessages();
+        this.startPeriodicCheck();
         console.log('WordleBlocker: Active');
+    }
+
+    startPeriodicCheck() {
+        this.periodicInterval = setInterval(() => {
+            this.checkAllMessages();
+        }, 5000);
+    }
+
+    processElement(element) {
+        this.checkAndHideMessage(element);
+        const messages = element.querySelectorAll('[class*="message"], [id*="message"], [class*="cozy"], [class*="compact"]');
+        messages.forEach(msg => this.checkAndHideMessage(msg));
     }
 
     stop() {
@@ -74,6 +86,10 @@ module.exports = class WordleBlocker {
             this.messageObserver.disconnect();
             this.messageObserver = null;
         }
+        if (this.periodicInterval) {
+            clearInterval(this.periodicInterval);
+            this.periodicInterval = null;
+        }
         
         const hiddenMessages = document.querySelectorAll('[data-wordle-blocked="true"]');
         hiddenMessages.forEach(msg => {
@@ -82,8 +98,8 @@ module.exports = class WordleBlocker {
         });
     }
 
-    checkExistingMessages() {
-        const messages = document.querySelectorAll('[class*="message"]');
+    checkAllMessages() {
+        const messages = document.querySelectorAll('[class*="message"], [id*="message"], [class*="cozy"], [class*="compact"]');
         messages.forEach(msg => this.checkAndHideMessage(msg));
     }
 
