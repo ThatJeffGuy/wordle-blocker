@@ -3,7 +3,11 @@
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
  * @version 1.19
- * Add your own regex starting at line 13 for custom blocking and filtering.
+ * @donate https://www.paypal.com/donate?token=TDoql1alt1c365GK9gdbysf0hHFKmbjjHgW93Kn_al8__EduYfvG41Peg_H_TNpI64JiGHs5l5Nvpu2w
+ * @patreon None -- PayPal link above.
+ * @website https://www.everydaysciencestuff.com/
+ * @source https://github.com/ThatJeffGuy/wordle-blocker/blob/main/wordle_blocker.plugin.js
+ * @updateUrl https://github.com/ThatJeffGuy/wordle-blocker/blob/main/wordle_blocker.plugin.js
  */
 
 module.exports = class WordleBlocker {
