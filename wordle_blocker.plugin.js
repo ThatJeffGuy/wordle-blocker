@@ -2,12 +2,14 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 1.19
+ * @version 2.00 - BETA
  * @donate https://www.paypal.com/donate?token=TDoql1alt1c365GK9gdbysf0hHFKmbjjHgW93Kn_al8__EduYfvG41Peg_H_TNpI64JiGHs5l5Nvpu2w
  * @patreon None -- PayPal link above.
  * @website https://www.everydaysciencestuff.com/
  * @source https://github.com/ThatJeffGuy/wordle-blocker/blob/main/wordle_blocker.plugin.js
  * @updateUrl https://github.com/ThatJeffGuy/wordle-blocker/blob/main/wordle_blocker.plugin.js
+ * This is a beta branch -- i'm working on scanning multi-line messages for scores instead of just the URL, however this is still in testing
+ * and beta stages. Do not use this version, unless you're willing to help me through code review hell.
  */
 
 module.exports = class WordleBlocker {
@@ -123,21 +125,47 @@ module.exports = class WordleBlocker {
         }
 
         try {
-            const contentElement = messageElement.querySelector('[class*="messageContent"]') ||
-                                  messageElement.querySelector('[class*="markup"]');
+            const mainMessage = messageElement.closest('[id*="chat-messages-"]') || messageElement;
             
-            if (!contentElement) return;
+            if (mainMessage.getAttribute('data-wordle-blocked')) {
+                return;
+            }
 
-            const messageText = contentElement.textContent || '';
-            const messageHTML = contentElement.innerHTML || '';
+            const allContentElements = [
+                ...mainMessage.querySelectorAll('[class*="messageContent"]'),
+                ...mainMessage.querySelectorAll('[class*="markup"]'),
+                ...mainMessage.querySelectorAll('[class*="repliedTextContent"]'),
+                ...mainMessage.querySelectorAll('[class*="content"]')
+            ];
 
-            const shouldBlock = this.blockedPatterns.some(pattern => {
-                return pattern.test(messageText) || pattern.test(messageHTML);
+            let fullMessageText = '';
+            let fullMessageHTML = '';
+
+            allContentElements.forEach(element => {
+                const text = element.textContent || element.innerText || '';
+                const html = element.innerHTML || '';
+                fullMessageText += text + '\n';
+                fullMessageHTML += html + '\n';
             });
 
-            if (shouldBlock) {
-                this.hideMessage(messageElement);
+            if (!fullMessageText.trim()) return;
+
+            const lineCount = fullMessageText.split('\n').filter(line => line.trim().length > 0).length;
+            
+            if (lineCount <= 1) {
+                return;
             }
+
+            const hasGameEmojis = this.blockedPatterns.some(pattern => {
+                return pattern.test(fullMessageText) || pattern.test(fullMessageHTML);
+            });
+
+            const hasGameKeywords = /wordle|connections|spelling\s*bee|quordle|heardle|nerdle|worldle|absurdle|framed|angle/gi.test(fullMessageText);
+
+            if (hasGameEmojis && hasGameKeywords) {
+                this.hideMessage(mainMessage);
+            }
+
         } catch (e) {
             console.log('WordleBlocker: Error processing message', e);
         }
