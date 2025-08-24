@@ -2,14 +2,12 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 2.00 - BETA
+ * @version 2.5-beta
  * @donate https://www.paypal.com/donate?token=TDoql1alt1c365GK9gdbysf0hHFKmbjjHgW93Kn_al8__EduYfvG41Peg_H_TNpI64JiGHs5l5Nvpu2w
  * @patreon None -- PayPal link above.
  * @website https://www.everydaysciencestuff.com/
  * @source https://github.com/ThatJeffGuy/wordle-blocker/blob/main/wordle_blocker.plugin.js
  * @updateUrl https://github.com/ThatJeffGuy/wordle-blocker/blob/main/wordle_blocker.plugin.js
- * This is a beta branch -- i'm working on scanning multi-line messages for scores instead of just the URL, however this is still in testing
- * and beta stages. Do not use this version, unless you're willing to help me through code review hell.
  */
 
 module.exports = class WordleBlocker {
@@ -17,20 +15,7 @@ module.exports = class WordleBlocker {
         this.observer = null;
         this.blockedPatterns = [
             /[🟩🟨⬜⬛🟦⬛️⬜️🟩️🟨️🟦️⬆️⬇️⬅️➡️◼️◻️▫️▪️]/g,
-            /:green_square:|:yellow_square:|:white_square:|:black_square:|:blue_square:|:black_large_square:|:white_large_square:/gi,
-            /wordle\s*\d+/gi,
-            /connections\s*(puzzle\s*)?\#?\d+/gi,
-            /spelling\s*bee/gi,
-            /quordle/gi,
-            /heardle/gi,
-            /nerdle/gi,
-            /worldle/gi,
-            /absurdle/gi,
-            /framed/gi,
-            /#angle\s*#?\d+/gi,
-            /angle\.wtf/gi,
-            /nytimes\.com\/games/gi,
-            /\d+\/\d+\s*[🟩🟨⬜⬛🟦⬛️⬜️🟩️🟨️🟦️◼️◻️]/gi
+            /:green_square:|:yellow_square:|:white_square:|:black_square:|:blue_square:|:black_large_square:|:white_large_square:/gi
         ];
     }
 
@@ -150,19 +135,24 @@ module.exports = class WordleBlocker {
 
             if (!fullMessageText.trim()) return;
 
-            const lineCount = fullMessageText.split('\n').filter(line => line.trim().length > 0).length;
+            const actualLines = fullMessageText.split('\n').filter(line => line.trim().length > 0);
+            console.log(`WordleBlocker: Message has ${actualLines.length} lines`);
             
-            if (lineCount <= 1) {
+            if (actualLines.length < 2) {
+                console.log('WordleBlocker: Skipping single-line message');
                 return;
             }
 
             const hasGameEmojis = this.blockedPatterns.some(pattern => {
-                return pattern.test(fullMessageText) || pattern.test(fullMessageHTML);
+                const match = pattern.test(fullMessageText) || pattern.test(fullMessageHTML);
+                if (match) console.log(`WordleBlocker: Found emoji pattern: ${pattern}`);
+                return match;
             });
+            
+            console.log(`WordleBlocker: Has emojis: ${hasGameEmojis}`);
 
-            const hasGameKeywords = /wordle|connections|spelling\s*bee|quordle|heardle|nerdle|worldle|absurdle|framed|angle/gi.test(fullMessageText);
-
-            if (hasGameEmojis && hasGameKeywords) {
+            if (hasGameEmojis && actualLines.length >= 2) {
+                console.log('WordleBlocker: Multi-line message with emojis - blocking');
                 this.hideMessage(mainMessage);
             }
 
