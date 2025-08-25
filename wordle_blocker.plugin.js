@@ -2,7 +2,7 @@
  * @name WordleBlocker
  * @author ScottishHaze
  * @description Blocks Wordle celebrations and similar puzzle game results from chat
- * @version 2.8 - Release Candidate 1
+ * @version 2.8 - Release Candidate 2
  * @donate https://www.paypal.com/donate?token=TDoql1alt1c365GK9gdbysf0hHFKmbjjHgW93Kn_al8__EduYfvG41Peg_H_TNpI64JiGHs5l5Nvpu2w
  * @patreon None -- PayPal link above.
  * @website https://www.everydaysciencestuff.com/
@@ -14,9 +14,9 @@ module.exports = class WordleBlocker {
     constructor() {
         this.observer = null;
         this.blockedPatterns = [
-            /[🟩🟨⬜⬛🟦⬛️⬜️🟩️🟨️🟦️⬆️⬇️⬅️➡️◼️◻️▫️▪️]/g,
-            /:green_square:|:yellow_square:|:white_square:|:black_square:|:blue_square:|:black_large_square:|:white_large_square:/gi
-        ];
+        /([⬜⬛🟩🟨🟦🟥🟧🟪🟫◼️◻️▫️▪️]{3,})/g,
+        /(:green_square:|:yellow_square:|:white_square:|:black_square:|:blue_square:|:black_large_square:|:white_large_square){3,}/gi
+    ];
     }
 
     start() {
@@ -95,7 +95,7 @@ module.exports = class WordleBlocker {
     }
 
     scanChannelMessages() {
-        console.log('WordleBlocker: Scanning channel messages');
+        
         const messages = document.querySelectorAll('[data-list-id="chat-messages"] [class*="messageListItem"]');
         messages.forEach(msg => {
             if (msg.querySelector && !msg.getAttribute('data-wordle-blocked')) {
@@ -136,28 +136,28 @@ module.exports = class WordleBlocker {
             if (!fullMessageText.trim()) return;
 
             const actualLines = fullMessageText.split('\n').filter(line => line.trim().length > 0);
-            console.log(`WordleBlocker: Message has ${actualLines.length} lines`);
+            
             
             if (actualLines.length < 2) {
-                console.log('WordleBlocker: Skipping single-line message');
+                
                 return;
             }
 
             const hasGameEmojis = this.blockedPatterns.some(pattern => {
                 const match = pattern.test(fullMessageText) || pattern.test(fullMessageHTML);
-                if (match) console.log(`WordleBlocker: Found emoji pattern: ${pattern}`);
+                if (match) 
                 return match;
             });
             
-            console.log(`WordleBlocker: Has emojis: ${hasGameEmojis}`);
+            
 
             if (hasGameEmojis && actualLines.length >= 2) {
-                console.log('WordleBlocker: Multi-line message with emojis - blocking');
+                
                 this.hideMessage(mainMessage);
             }
 
         } catch (e) {
-            console.log('WordleBlocker: Error processing message', e);
+            
         }
     }
 
@@ -169,9 +169,9 @@ module.exports = class WordleBlocker {
         try {
             messageElement.setAttribute('data-wordle-blocked', 'true');
             messageElement.style.display = 'none';
-            console.log('WordleBlocker: Blocked message');
+            
         } catch (e) {
-            console.log('WordleBlocker: Error hiding message', e);
+            
         }
     }
 };
